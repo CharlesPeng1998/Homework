@@ -96,7 +96,7 @@ bool check_ip_address(char *ip_address)
 /********************************
 *每次接收两个字符串              *
 *判断是否合法                    *
-*并修改相对的参数值              *
+*并修改相对应的参数值              *
 *********************************/
 int check_parameter(char *para_1, char *para_2, int &para_n, int &para_l, int &para_t, char *ip_address)
 {
@@ -116,7 +116,7 @@ int check_parameter(char *para_1, char *para_2, int &para_n, int &para_l, int &p
 	//检查-l的后续参数是否存在或者是否在合理范围
 	else if (!strcmp(para_1, "-l"))
 	{
-		if ((para_2[0] == '-' && atoi(para_2) == 0) || strcmp(para_2, ip_address) == 0)
+		if (para_2[0] == '-' || strcmp(para_2, ip_address) == 0)
 		{
 			cout << "参数-l没有后续参数" << endl;
 			return 0;
@@ -132,7 +132,7 @@ int check_parameter(char *para_1, char *para_2, int &para_n, int &para_l, int &p
 	//检查-n的后续参数是否存在或者是否在合理范围
 	else if (!strcmp(para_1, "-n"))
 	{
-		if ((para_2[0] == '-' && atoi(para_2)==0)|| strcmp(para_2, ip_address) == 0)
+		if (para_2[0] == '-'|| strcmp(para_2, ip_address) == 0)
 		{
 			cout << "参数-n没有后续参数" << endl;
 			return 0;
