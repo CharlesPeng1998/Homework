@@ -33,7 +33,6 @@ int main(int argc, char *argv[])
 	if (!infile.is_open())
 	{
 		cerr << "文件打开失败" << endl;
-		infile.close();
 		return -1;
 	}
 

@@ -43,13 +43,6 @@ int main(int argc, char *argv[])
 
 			//打开待转换文件
 			ifstream infile(argv[3], ios::in | ios::binary);
-			//文件读取错误处理
-			if (!infile.is_open())
-			{
-				cerr << "无法打开源文件" << endl;
-				infile.close();//记得关掉			
-				return -1;
-			}
 
 			//打开接收转化后文本的文件
 			ofstream outfile(argv[4], ios::out | ios::binary);
@@ -57,7 +50,7 @@ int main(int argc, char *argv[])
 			if (!outfile.is_open())
 			{
 				cerr << "无法打开源文件" << endl;
-				outfile.close();//记得关掉			
+				infile.close();//记得关掉		
 				return -1;
 			}
 
@@ -100,7 +93,7 @@ int main(int argc, char *argv[])
 			if (!outfile.is_open())
 			{
 				cerr << "无法打开源文件" << endl;
-				outfile.close();//记得关掉			
+				infile.close();//记得关掉			
 				return -1;
 			}
 
@@ -144,8 +137,7 @@ int is_Windows(char *filename)
 	//文件读取错误处理
 	if (!infile.is_open())
 	{
-		cerr << "无法打开源文件" << endl;
-		infile.close();//记得关掉			
+		cerr << "无法打开源文件" << endl;			
 		return -1;
 	}
 	

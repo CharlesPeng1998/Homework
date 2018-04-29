@@ -1,253 +1,139 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <iostream>  //书上缺，要补上
+#include <iostream>
 #include <fstream>
-#include <cstdlib>   //exit用，linux无此头文件会报错
+#include <Windows.h>
+#include <io.h>
+#include <conio.h>
+#include <experimental/filesystem>
 using namespace std;
 
-//该函数用于将十六进制ascii码字符串转化为整型
-int str_to_int(char str[])
+/***************************************************************************
+函数名称：
+功    能：
+输入参数：
+返 回 值：
+说    明：此函数允许放到 common_cfgfile_tools.cpp 中做为内部工具函数
+***************************************************************************/
+static int file_length(fstream &fp)
 {
-	int part1;
-	int part2;
+	int file_len, now_pos;
 
-	if (str[1] >= 'a')
-	{
-		part2 = str[1] - 'a' + 10;
-	}
-	else part2 = str[1] - '0';
+	/* 当前为错误状态则返回-1 */
+	if (fp.fail())
+		return -1;
 
-	if (str[0] >= 'a')
-	{
-		part1 = str[0] - 'a' + 10;
-	}
-	else part1 = str[0] - '0';
+	/* 取fp当前指针位置 */
+	now_pos = int(fp.tellg());
 
-	return part1 * 16 + part2;
+	/* 将文件指针移动到最后，此时tellp的结果就是文件大小 */
+	fp.seekg(0, ios::end);
+	file_len = int(fp.tellp());
+
+	/* 指针移动回函数调用前的原位置 */
+	fp.seekg(now_pos, ios::beg);
+
+	return file_len;
 }
 
-/* 函数13a：将字符串中的所有小写字母转换成大写 */
-void tj_strupr(char str[])
+/***************************************************************************
+函数名称：
+功    能：
+输入参数：
+返 回 值：
+说    明：此函数允许放到 common_cfgfile_tools.cpp 中做为内部工具函数
+***************************************************************************/
+static int file_resize(const char *filename, fstream &fp, int newsize)
 {
-	for (int i = 0; str[i] != '\0'; i++)
-		if (str[i] >= 'a' && str[i] <= 'z')
-			str[i] += 'A' - 'a';
+	int now_pos;
+
+	/* 当前为错误状态则返回-1 */
+	if (fp.fail())
+		return -1;
+
+	/* 取fp当前指针位置 */
+	now_pos = int(fp.tellg());
+
+	/* 如果大小是负数则直接返回-1 */
+	if (newsize < 0)
+		return -1;
+
+	experimental::filesystem::resize_file(filename, newsize);
+
+	/* 如果当前文件指针超过了文件大小，则回到文件头 */
+	if (now_pos > newsize)
+		fp.seekg(0, ios::beg);
+
+	return 0;
 }
 
-/* 转化并输出，非法返回false */
-bool convert(ofstream &fout, char *str)
+/***************************************************************************
+函数名称：
+功    能：
+输入参数：
+返 回 值：
+说    明：
+***************************************************************************/
+int main()
 {
-	unsigned char temp = 0;
-	if (strlen(str) != 2)
-		return false;
+	const char *fname = "test.txt";
+	fstream fp;
+	char buf[80];
 
-	tj_strupr(str);
-	for (int i = 0; i < 2; i++) {
-		if (str[i] >= '0' && str[i] <= '9')
-			temp += (str[i] - '0') << 4 * (1 - i);
-		else if (str[i] >= 'A' && str[i] <= 'F')
-			temp += (str[i] - 'A' + 10) << 4 * (1 - i);
-		else
-			return false;
-	}
-
-	fout.put(temp);
-	//cout << (int)(temp) << endl;
-	return true;
-}
-
-int main(int argc, char *argv[])
-{
-	if (argc < 3)
-	{
-		cout << "参数数量不足" << endl;
+	/* 首先建立test.txt，并向其中写入测试内容 */
+	fp.open(fname, ios::out);
+	if (!fp.is_open()) {
+		cout << "open failed!" << endl;
 		return -1;
 	}
 
-	char *orig_file;
-	char *converted_file;
+	fp << "窗前明月光，" << endl;
+	fp << "疑是地上霜。" << endl;
+	fp << "举头望明月，" << endl;
+	fp << "低头思故乡。" << endl;
 
-	orig_file = argv[1];
-	converted_file = argv[2];
+	fp.close();
 
-	ifstream infile(orig_file, ios::binary);
-	if (!infile.is_open())
-	{
-		cout << "文件打开失败" << endl;
-		infile.close();
+	cout << "请在文件夹中观察test.txt的长度是否56字节，并用第三方编辑(UltraEdit等)软件打开test.txt查看" << endl;
+	cout << "按C继续" << endl;
+	while (_getch() != 'C')
+		;
+
+	/* 文件以读写方式打开（不存在则失败）*/
+	fp.open(fname, ios::in | ios::out);
+	if (!fp.is_open()) {
+		cout << "open failed!" << endl;
 		return -1;
 	}
 
-	ofstream outfile(converted_file, ios::out | ios::binary);
-	if (!outfile.is_open())
-	{
-		cout << "文件打开失败" << endl;
-		infile.close();
-		outfile.close();
+	cout << "文件长度" << file_length(fp) << "字节" << endl;
+
+	// 使文件在原基础上缩减10字节
+	file_resize(fname, fp, file_length(fp) - 10);
+
+	cout << "文件新长度" << file_length(fp) << "字节" << endl;
+
+	cout << "请输入一个字符串(11-50字符之间)" << endl;
+	gets_s(buf);
+
+	/* 用输入字符串的内容将文件的第二行前10字节(五个汉字)替换掉 */
+	fp.seekg(14, ios::beg);
+	buf[10] = '\0'; //只写前10字节，如果输入不满10字节，会有乱码
+	fp << buf;
+	fp.close();
+	/* 执行到此，测试完成 */
+
+	cout << "请在文件夹中观察test.txt的长度是否46字节，并用第三方编辑(UltraEdit等)软件打开test.txt查看" << endl;
+	cout << "按C继续" << endl;
+	while (_getch() != 'C')
+		;
+
+	/* 再次读取文件长度 */
+	fp.open(fname, ios::in);
+	if (!fp.is_open()) {
+		cout << "open failed!" << endl;
 		return -1;
 	}
-
-	//逐行读取源文件中的信息
-	while (!infile.eof())
-	{
-		char ascii_str[16][3];//存放每一行从源文件中读取的ASCII码
-		unsigned char ascii_int[16]; //存放源文件中读取的ascii码对应的整型
-		int count = 0; //记录实际得到的ASCII数量
-
-		infile.ignore(10); //跳过行前的首字符位置
-
-						   //读取前八个ASCII码
-		for (int i = 0; i < 8; i++)
-		{
-			infile.getline(ascii_str[i], 3, ' ');
-		}
-
-		infile.ignore(2); //跳过分隔符
-
-						  //读取后八个ASCII码
-		for (int i = 8; i < 16; i++)
-		{
-			infile.getline(ascii_str[i], 3, ' ');
-		}
-
-		infile.ignore(22);
-
-		//将读取到的ASCII转化成十六进制数写入到目标文件中
-		for (int i = 0; i < 16; i++)
-		{
-			if (ascii_str[i][0] != 0 && ascii_str[i][1] != 0 && ascii_str[i][0] != EOF && ascii_str[i][1] != EOF) //判断是否读到有效数据
-			{
-				//转化为整型存放到数组当中
-				ascii_int[count++] = str_to_int(ascii_str[i]);
-			}
-			else break;
-		}
-
-		for (int i = 0; i < count; i++)
-		{
-			outfile.put(ascii_int[i]);
-			//cout << int(ascii_int[i]) << ' ';
-		}
-		//cout << endl;
-	}
-
-	infile.close();
-	outfile.close();
-
-#if 0
-	int total = 0;
-
-	if (argc < 2)
-	{
-		cout << "参数数量不足" << endl;
-		return -1;
-	}
-
-	char *orig_file;
-	orig_file = argv[1];
-
-	ifstream infile(orig_file, ios::in | ios::binary);
-	if (!infile.is_open())
-	{
-		cout << "文件打开失败" << endl;
-		infile.close();
-		return -1;
-	}
-	//逐行读取源文件中的信息
-	while (!infile.eof())
-	{
-		char ascii_str[16][3];//存放每一行从源文件中读取的ASCII码
-		int ascii_int[16]; //存放源文件中读取的ascii码对应的整型
-		int count = 0; //记录实际得到的ASCII数量
-
-		infile.ignore(10); //跳过行前的首字符位置
-
-		//读取前八个ASCII码
-		for (int i = 0; i < 8; i++)
-		{
-			infile.getline(ascii_str[i], 3, ' ');
-		}
-
-		infile.ignore(2); //跳过分隔符
-
-		//读取后八个ASCII码
-		for (int i = 8; i < 16; i++)
-		{
-			infile.getline(ascii_str[i], 3, ' ');
-		}
-
-		infile.ignore(22);
-
-		//将读取到的ASCII转化成十六进制数写入到目标文件中
-		for (int i = 0; i < 16; i++)
-		{
-			if (ascii_str[i][0] != 0) //判断是否读到有效数据
-			{
-				//转化为整型存放到数组当中
-				ascii_int[count++] = str_to_int(ascii_str[i]);
-			}
-			else break;
-		}
-		total += count;
-
-		for (int i = 0; i < count; i++)
-		{
-			cout << ascii_int[i] << ' ';
-		}
-	}
-
-	cout << endl << total << endl;
-#endif
-
-#if 0
-	char text1[19][17];
-	char text2[19][17];
-	cin.ignore(10);
-	for (int i = 0; i < 8; i++)
-	{
-		cin.getline(text1[i], 3, ' ');
-	}
-
-	cin.ignore(2);
-
-	for (int i = 8; i <16; i++)
-	{
-		cin.getline(text1[i], 3, ' ');
-	}
-
-	for (int i = 0; i < 16; i++)
-	{
-		cout << text1[i]<<endl;
-	}
-	cout << text1[11] << endl;
-	cout << text1[12] << endl;
-	cout << int(text1[11][0]) << endl;
-	cout << int(text1[12][0]) << endl;
-	cout << int(text1[13][0]) << endl;
-	cout << int(text1[14][0]) << endl;
-	cout << int(text1[15][0]) << endl;
-
-
-	/*cin.ignore(21);
-	cout << endl;
-	
-	cin.ignore(10);
-	for (int i = 0; i < 8; i++)
-	{
-		cin.getline(text2[i], 3, ' ');
-	}
-
-	cin.ignore(2);
-
-	for (int i = 8; i <16; i++)
-	{
-		cin.getline(text2[i], 3, ' ');
-	}
-
-	for (int i = 0; i < 16; i++)
-	{
-		cout << text2[i] << endl;
-	}*/
-#endif	
+	cout << "关闭后再次验证新文件长度" << file_length(fp) << "字节" << endl;
+	fp.close();
 
 	return 0;
 }

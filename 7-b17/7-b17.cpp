@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 		//将读取到的ASCII转化成十六进制数写入到目标文件中
 		for (int i = 0; i < 16; i++)
 		{
-			if (ascii_str[i][0] != 0 && ascii_str[i][1] != 0 && ascii_str[i][0] != EOF && ascii_str[i][1] != EOF) //判断是否读到有效数据
+			if (((ascii_str[i][0]>='a' && ascii_str[i][0]<='f') || (ascii_str[i][0] >= '0' && ascii_str[i][0] <= '9'))&&((ascii_str[i][1] >= 'a' && ascii_str[i][1] <= 'f') || (ascii_str[i][1] >= '0' && ascii_str[i][1] <= '9'))) //判断是否读到有效数据
 			{
 				//转化为整型存放到数组当中
 				ascii_int[count++] = str_to_int(ascii_str[i]);
